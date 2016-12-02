@@ -43,9 +43,12 @@ module.exports = db;
 
 // Mongoose files
 
-var MongoClient = require('mongodb').MongoClient;
+//var MongoClient = require('mongodb').MongoClient;
 var mongoose = require('mongoose');
 var assert = require('assert');
+var crypto = require('crypto');
+var bcrypt = require('bcrypt-nodejs');
+var Promise = require('bluebird');
 
 var url = 'mongodb://localhost:27017/shortly-deploy';
 
@@ -63,10 +66,25 @@ var userSchema = mongoose.Schema({
   username: String, 
   password: String, 
   date: { type: Date, default: Date.now }
-// did not assign an id since Mongo also makes and id,  but be may need one to make this backwards compatible
 });
 
-var User = mongoose.model('User', userSchema);
+userSchema.pre('save', function(next) {
+  var cipher = Promise.promisify(bcrypt.hash);
+  cipher(this.password, null, null).bind(this)
+    .then(function(hash) {
+      this.password = hash;
+      next();
+    });
+});
+
+userSchema.methods.comparePassword = function(attemptedPassword, callback) {
+  // console.log('inside comparePassword method');
+  bcrypt.compare(attemptedPassword, this.get('password'), function(err, isMatch) {
+    callback(isMatch);
+  });
+};
+
+// var User = mongoose.model('User', userSchema);
 
 var urlSchema = mongoose.Schema({
   url: String,
@@ -77,22 +95,54 @@ var urlSchema = mongoose.Schema({
   date: { type: Date, default: Date.now }
 });
 
-var Link = mongoose.model('Link', urlSchema);
+//can we just out this in the save method?
+urlSchema.pre('save', function(next) {
+  var shasum = crypto.createHash('sha1');
+  shasum.update(this.url);
+  this.code = shasum.digest('hex').slice(0, 5);
+  // console.log('end initialize', this.code);
+  next();
+});
 
 var db = mongoose.connection;
 db.on('error', console.error.bind(console, 'connection error:'));
 
 db.once('open', function() {
   console.log('were connected');
-//  var Ted = new User({username: 'Ted Kennedy', password: 'Mary Kopechney'});
 });
 
+module.exports = db;
+module.exports.urlSchema = urlSchema;
+module.exports.userSchema = userSchema;
+
+
+// var myUrl = new Link({url: 'http://www.cnn.com/sports', title: 'nfl week 12', baseUrl: 'http://www.cnn.com' });
+
+// myUrl.save(function(err, myUrl) {
+//   if (err) { return console.error(err); }
+//   console.log('We put this url in his place');    
+// });
+
+/*
 var Ted = new User({username: 'Ted Kennedy', password: 'Mary Kopechney'});
-Ted.save(function(err, Ted){
-  if (err) {
-    return console.error(err); }
+var Bill = new User({username: 'William J Clinton', password: 'Monica Lewinski'});
+var Arnold = new User({username: 'Governator', password: 'the name of his housekeeper'});
+
+Ted.save(function(err, Ted) {
+  if (err) { return console.error(err); }
   console.log('We put Ted in his place');    
 });
+
+Bill.save(function(err, Bill) {
+  if (err) { return console.error(err); }
+  console.log('We put Bill in his place');    
+});
+
+Arnold.save(function(err, Arnold) {
+  if (err) { return console.error(err); }
+  console.log('We put Arnold in his place');    
+});
+
 console.log(Ted.password);
 
-console.log(User.find({username: 'Ted Kennedy'}));
+console.log(User.find({username: 'Ted Kennedy'}));*/

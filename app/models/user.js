@@ -1,4 +1,4 @@
-var db = require('../config');
+/*var db = require('../config');
 var bcrypt = require('bcrypt-nodejs');
 var Promise = require('bluebird');
 
@@ -21,5 +21,15 @@ var User = db.Model.extend({
       });
   }
 });
+
+module.exports = User;
+*/
+
+var db = require('../config');
+var mongoose = require('mongoose');
+
+var User = mongoose.model('User', db.userSchema);
+
+// var Ted = new User({username: 'derp', password: 'derpy'});
 
 module.exports = User;
