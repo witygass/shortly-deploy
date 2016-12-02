@@ -7,8 +7,8 @@ module.exports = function(grunt) {
     concat: {
       options: { seperator: ';'},
       dist: {
-        src: ['....'],
-        dest: 'public/dist/<%= pkg.name%>'
+        src: ['./public/client/*.js'],
+        dest: './dist/concat.js'
       }
     },
 
@@ -105,6 +105,8 @@ module.exports = function(grunt) {
   ]);
 
   grunt.registerTask('start', ['nodemon']);
+
+  // grunt.registerTask( '' , ['concat']);
 
   grunt.registerTask('commitProd', ['gitcommit']);
 
